@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Blank You Never Told It to Fill — A Prompting Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#141A2E;          /* deep blueprint navy */
+    --ink-soft:#2A3350;
+    --paper:#FBFAF7;        /* warm paper */
+    --paper-2:#F2EFE7;      /* panel paper */
+    --line:#DED9CC;         /* hairline */
+    --line-strong:#C4BDAA;
+    --amber:#E8A33D;        /* signal accent */
+    --amber-deep:#B9791E;
+    --violet:#7C5CDB;       /* personas */
+    --violet-soft:#EEE9FB;
+    --green:#2E9E6B; --green-bg:#E4F3EC;
+    --gold:#D98A2B;  --gold-bg:#FBEED9;
+    --red:#D65745;   --red-bg:#FADFDB;
+    --muted:#6A6553;
+    --shadow: 0 1px 0 rgba(20,26,46,.04), 0 8px 30px -12px rgba(20,26,46,.25);
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --serif:'Source Serif 4',Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--serif);font-size:19px;line-height:1.66;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:0 26px}
+
+  /* ---- blueprint grid backdrop on hero ---- */
+  header.hero{
+    position:relative;background:var(--ink);color:var(--paper);
+    padding:76px 0 64px;overflow:hidden;border-bottom:3px solid var(--amber);
+  }
+  header.hero::before{
+    content:"";position:absolute;inset:0;opacity:.09;
+    background-image:linear-gradient(var(--paper) 1px,transparent 1px),
+                     linear-gradient(90deg,var(--paper) 1px,transparent 1px);
+    background-size:34px 34px;mask-image:radial-gradient(ellipse 90% 70% at 30% 0%,#000 40%,transparent 100%);
+  }
+  .hero .wrap{position:relative}
+  .eyebrow{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--amber);margin:0 0 22px;display:flex;gap:14px;align-items:center;
+  }
+  .eyebrow::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--amber),transparent)}
+  h1.title{
+    font-family:var(--disp);font-weight:700;font-size:clamp(38px,6.5vw,66px);
+    line-height:1.02;letter-spacing:-.02em;margin:0 0 20px;
+  }
+  h1.title em{font-style:normal;color:var(--amber);}
+  .dek{font-size:clamp(19px,2.4vw,23px);max-width:60ch;color:#D8D4C7;margin:0 0 30px;font-weight:400}
+  .meta{font-family:var(--mono);font-size:12.5px;color:#9C9788;letter-spacing:.04em;display:flex;gap:20px;flex-wrap:wrap}
+  .meta b{color:#D8D4C7;font-weight:500}
+
+  /* ---- section scaffolding ---- */
+  section{padding:60px 0;border-bottom:1px solid var(--line)}
+  .rung-label{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--amber-deep);margin:0 0 12px;font-weight:600;
+  }
+  h2{font-family:var(--disp);font-weight:600;font-size:clamp(27px,4vw,38px);line-height:1.08;letter-spacing:-.015em;margin:0 0 20px}
+  h3{font-family:var(--disp);font-weight:600;font-size:22px;letter-spacing:-.01em;margin:34px 0 12px}
+  p{margin:0 0 20px}
+  .lede{font-size:22px;line-height:1.55}
+  a{color:var(--amber-deep)}
+  strong{font-weight:600}
+  em.ital{font-style:italic}
+
+  .pullquote{
+    font-family:var(--disp);font-weight:500;font-size:clamp(21px,3vw,27px);line-height:1.28;
+    letter-spacing:-.01em;color:var(--ink);border-left:4px solid var(--amber);
+    padding:6px 0 6px 26px;margin:34px 0;
+  }
+
+  /* ---- prompt card (a "spec sheet") ---- */
+  .prompt{
+    background:var(--ink);color:#EDEAE0;border-radius:10px;overflow:hidden;
+    margin:26px 0;box-shadow:var(--shadow);font-family:var(--mono);
+  }
+  .prompt .bar{
+    display:flex;align-items:center;gap:10px;padding:11px 16px;
+    background:#1C2438;border-bottom:1px solid #2E3A57;
+    font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#8FA0C4;
+  }
+  .prompt .bar .dot{width:9px;height:9px;border-radius:50%;background:#E8A33D;box-shadow:15px 0 0 #556,30px 0 0 #556;margin-right:34px}
+  .prompt .bar .tag{margin-left:auto;color:var(--amber);font-weight:500}
+  .prompt pre{margin:0;padding:18px 18px 20px;font-size:14.5px;line-height:1.72;white-space:pre-wrap;color:#E4E1D6}
+  .prompt pre .b{color:var(--amber);font-weight:600}       /* block label */
+  .prompt pre .g{color:#7FD3A6}                             /* good */
+  .prompt pre .dim{color:#8A93AB}                           /* comment */
+  .prompt pre .cut{color:#E79C8F;text-decoration:line-through} /* removed */
+
+  /* ---- callout ---- */
+  .note{
+    background:var(--paper-2);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;margin:24px 0;font-size:17.5px;line-height:1.6;
+  }
+  .note .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber-deep);display:block;margin-bottom:7px;font-weight:600}
+
+  /* ---- WORKBENCH: live scorecard ---- */
+  .workbench{background:var(--ink);color:#EDEAE0;border-radius:14px;padding:26px;margin:30px 0;box-shadow:var(--shadow)}
+  .workbench h3{color:var(--paper);margin-top:0}
+  .wb-sub{color:#AEB6CC;font-size:16px;font-family:var(--serif);margin:-4px 0 18px}
+  .wb-presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .wb-presets button{
+    font-family:var(--mono);font-size:12px;letter-spacing:.03em;cursor:pointer;
+    background:#222B42;color:#C9D0E2;border:1px solid #33405E;border-radius:999px;padding:7px 13px;transition:.15s;
+  }
+  .wb-presets button:hover{background:#2C374F;border-color:var(--amber);color:#fff}
+  #promptInput{
+    width:100%;min-height:132px;resize:vertical;background:#0F1524;color:#E9E6DC;
+    border:1px solid #33405E;border-radius:9px;padding:14px 15px;
+    font-family:var(--mono);font-size:14px;line-height:1.62;
+  }
+  #promptInput:focus{outline:2px solid var(--amber);border-color:transparent}
+  .wb-actions{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    font-family:var(--disp);font-weight:600;font-size:15px;cursor:pointer;border:none;border-radius:8px;
+    padding:11px 20px;background:var(--amber);color:#241a06;transition:.15s;
+  }
+  .btn:hover{background:#F2B14E;transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:#C9D0E2;border:1px solid #33405E}
+  .btn.ghost:hover{background:#222B42;color:#fff}
+  .wb-hint{font-family:var(--mono);font-size:12px;color:#7F88A0}
+
+  .verdict{margin:18px 0 6px;font-family:var(--disp);font-weight:600;font-size:17px;display:none}
+  .verdict .tier{color:var(--amber)}
+  .scorecard{display:grid;gap:9px;margin-top:14px}
+  .row{
+    display:grid;grid-template-columns:132px 108px 1fr;gap:12px;align-items:start;
+    background:#182136;border:1px solid #29334C;border-radius:9px;padding:12px 14px;
+    opacity:0;transform:translateY(6px);transition:.35s;
+  }
+  .row.show{opacity:1;transform:none}
+  .row .name{font-family:var(--disp);font-weight:600;font-size:15px;color:#EDEAE0}
+  .row .status{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .row .status::before{content:"";width:8px;height:8px;border-radius:50%}
+  .status.ok{background:var(--green-bg);color:#12633f}.status.ok::before{background:var(--green)}
+  .status.part{background:var(--gold-bg);color:#8a5410}.status.part::before{background:var(--gold)}
+  .status.miss{background:var(--red-bg);color:#8f2a1e}.status.miss::before{background:var(--red)}
+  .row .fb{font-family:var(--serif);font-size:15px;line-height:1.5;color:#C7CDDD}
+  @media(max-width:620px){
+    .row{grid-template-columns:1fr;gap:6px}
+    .row .status{justify-self:start}
+  }
+
+  /* ---- tier toggle ---- */
+  .tiers{display:flex;gap:8px;margin:22px 0 8px;flex-wrap:wrap}
+  .tiers button{
+    font-family:var(--disp);font-weight:600;font-size:15px;cursor:pointer;border-radius:9px;padding:12px 18px;
+    border:1.5px solid var(--line-strong);background:var(--paper);color:var(--ink);transition:.15s;flex:1;min-width:150px;
+  }
+  .tiers button .sub{display:block;font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.02em}
+  .tiers button[aria-selected="true"]{border-color:var(--amber);background:#fff;box-shadow:var(--shadow)}
+  .tiers button[data-t="basic"][aria-selected="true"]{border-color:var(--green)}
+  .tiers button[data-t="focused"][aria-selected="true"]{border-color:#2f6fd6}
+  .tiers button[data-t="comprehensive"][aria-selected="true"]{border-color:var(--violet)}
+  .tier-panel{display:none}
+  .tier-panel.active{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .blockchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
+  .chip{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border-radius:6px;background:var(--paper-2);border:1px solid var(--line);color:var(--ink-soft)}
+  .chip.on{background:var(--ink);color:var(--amber);border-color:var(--ink)}
+
+  /* ---- building blocks table ---- */
+  table.blocks{width:100%;border-collapse:collapse;margin:22px 0;font-size:16px}
+  table.blocks th{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+    text-align:left;color:var(--muted);border-bottom:2px solid var(--line-strong);padding:9px 10px}
+  table.blocks td{border-bottom:1px solid var(--line);padding:11px 10px;vertical-align:top}
+  table.blocks td.bk{font-family:var(--disp);font-weight:600;white-space:nowrap;width:1%}
+  table.blocks tr:last-child td{border-bottom:none}
+  table.blocks code{font-family:var(--mono);font-size:13.5px;background:var(--paper-2);padding:2px 6px;border-radius:5px;color:var(--ink-soft)}
+
+  /* ---- personas ---- */
+  .persona-tabs{display:flex;gap:8px;margin:24px 0 0;flex-wrap:wrap}
+  .persona-tabs button{
+    font-family:var(--disp);font-weight:600;font-size:15px;cursor:pointer;border-radius:10px 10px 0 0;padding:14px 18px;
+    border:1.5px solid var(--line);border-bottom:none;background:var(--paper-2);color:var(--muted);transition:.15s;flex:1;min-width:150px;text-align:left;
+  }
+  .persona-tabs button .role{display:block;font-family:var(--mono);font-weight:400;font-size:11px;margin-top:3px;letter-spacing:.03em}
+  .persona-tabs button[aria-selected="true"]{background:#fff;color:var(--ink);border-color:var(--violet);box-shadow:0 -3px 0 var(--violet) inset}
+  .persona-body{border:1.5px solid var(--violet);border-radius:0 10px 10px 10px;padding:24px;background:#fff}
+  .persona-panel{display:none}.persona-panel.active{display:block;animation:fade .3s ease}
+  .pverb{font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet);font-weight:600;margin:0 0 6px}
+  .pwhen{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 6px}
+  @media(max-width:600px){.pwhen{grid-template-columns:1fr}}
+  .pwhen .col{background:var(--paper-2);border-radius:9px;padding:14px 16px;font-size:15.5px;line-height:1.5}
+  .pwhen .col h4{margin:0 0 6px;font-family:var(--disp);font-size:14px}
+  .pwhen .col.use h4{color:var(--green)} .pwhen .col.avoid h4{color:var(--red)}
+
+  /* ---- risk matrix ---- */
+  table.matrix{width:100%;border-collapse:collapse;margin:22px 0;font-size:15.5px}
+  table.matrix th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:left;
+    background:var(--ink);color:#C9D0E2;padding:11px 12px}
+  table.matrix th:first-child{border-radius:8px 0 0 0}table.matrix th:last-child{border-radius:0 8px 0 0}
+  table.matrix td{border-bottom:1px solid var(--line);padding:12px;vertical-align:top}
+  table.matrix .lvl{font-family:var(--disp);font-weight:600;white-space:nowrap}
+  .lvl.low{color:var(--green)}.lvl.mod{color:var(--gold)}.lvl.high{color:var(--red)}
+  table.matrix .exp{font-family:var(--mono);font-weight:600;text-align:right;white-space:nowrap}
+
+  /* two-column compare */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+  @media(max-width:600px){.compare{grid-template-columns:1fr}}
+  .compare .card{border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:var(--paper-2)}
+  .compare .card h4{margin:0 0 8px;font-family:var(--disp);font-size:15px}
+  .compare .card.bad h4{color:var(--red)}.compare .card.good h4{color:var(--green)}
+  .compare .card p{font-size:15.5px;line-height:1.5;margin:0}
+
+  /* footer */
+  footer{background:var(--ink);color:#B9C0D2;padding:48px 0 60px;font-family:var(--serif)}
+  footer .tags{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:#8A93AB;margin-top:18px}
+  footer .kicker{font-family:var(--disp);font-weight:600;color:var(--paper);font-size:22px;margin:0 0 10px}
+
+  ul.clean{margin:0 0 20px;padding-left:0;list-style:none}
+  ul.clean li{position:relative;padding-left:26px;margin-bottom:11px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--amber-deep);font-family:var(--mono)}
+  ul.clean li b{font-weight:600}
+
+  .divider-num{font-family:var(--mono);font-size:12px;color:var(--line-strong);letter-spacing:.2em}
+
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:4px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Applied AI · A Working Field Guide</p>
+    <h1 class="title">The blank you never<br>told it to <em>fill</em>.</h1>
+    <p class="dek">A model trained to be helpful will complete any gap you leave open — in the same confident voice it uses when it's right. This is a workbench for leaving fewer gaps: how to build a prompt, which of AI's three modes to call, and how to catch the two ways it quietly gets things wrong.</p>
+    <div class="meta">
+      <span><b>Read + operate:</b> ~14 min</span>
+      <span><b>Interactive:</b> live scorecard, tier switch, persona demos</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== OPENING: THE PROBLEM ===================== -->
+<section id="open">
+  <div class="wrap">
+    <p class="lede">An analyst asks an AI tool for the market-share figures her division needs for a board deck. The answer arrives in seconds — clean product names, tidy percentages, a confident paragraph of context. She drops it into the slides.</p>
+    <p>Two days later, in the room, the finance chief asks where the numbers came from. Nobody can source them. They were never real. The proposal she'd spent three weeks building gets shelved pending "more reliable analysis."</p>
+    <p>Nothing about the answer <em class="ital">looked</em> wrong. That is the whole problem. Helpfulness, pushed hard enough, produces one specific failure: the model fills any gap you leave open, and it fills it in the same fluent, self-assured register it uses when it is correct. The tone carries no signal about the truth.</p>
+    <p class="pullquote">Most bad AI output is not the model refusing to help. It's the model helping with something you didn't quite ask — filling a blank you never told it to fill.</p>
+    <p>What follows is built as a set of tools you operate, not a lecture you read. Four of them. Each closes a different gap. And one running example carries the whole piece: a large multi-brand apparel group — four consumer brands under one parent, one marketing function, one merchandising calendar — and the everyday work of someone on that team. Every prompt here is written for that setting, and every prompt is anonymized. That isn't incidental. It's the last tool, and we'll get to why.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 1: ANATOMY ===================== -->
+<section id="anatomy">
+  <div class="wrap">
+    <p class="rung-label">Tool 01 · Structure the ask</p>
+    <h2>A prompt has parts. Name them.</h2>
+    <p>Treat a prompt as an assembly, not a sentence. Six building blocks cover nearly everything you'll ever need to specify. You won't use all six every time — the skill is knowing which the task in front of you actually demands.</p>
+
+    <table class="blocks">
+      <thead><tr><th>Block</th><th>What it fixes</th><th>Fragment</th></tr></thead>
+      <tbody>
+        <tr><td class="bk">Role</td><td>Whose lens the answer takes — vocabulary, priorities, default assumptions.</td><td><code>"As a social-media marketing lead…"</code></td></tr>
+        <tr><td class="bk">Task</td><td>The specific action or deliverable. Begins with a verb.</td><td><code>"…write a launch announcement…"</code></td></tr>
+        <tr><td class="bk">Context</td><td>The situation the task sits in — audience, platform, background, constraints.</td><td><code>"…for a younger audience on two social platforms…"</code></td></tr>
+        <tr><td class="bk">Requirements</td><td>Format, length, tone, structure, required elements.</td><td><code>"…two versions, each under 150 words, with a call to action."</code></td></tr>
+        <tr><td class="bk">Reasoning</td><td>A request to show the logic, or the rationale behind the ask.</td><td><code>"Explain why you grouped the themes that way."</code></td></tr>
+        <tr><td class="bk">Boundaries</td><td>What <em class="ital">not</em> to do — limits on data, scope, or invention.</td><td><code>"Use only the feedback provided. Don't invent quotes."</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>The reason this matters is mechanical, not stylistic. <strong>Wherever a block is missing, the model supplies its own default.</strong> Leave out Role and it picks a generic voice. Leave out Requirements and it guesses a format. Leave out Boundaries and it feels free to fill gaps with plausible invention. Every unspecified block is a blank — and you already know what the model does with blanks.</p>
+    <p>There's a cleaner way to hold all six in your head. The first three — <strong>Task, Context, Role</strong> — set the <em class="ital">what, why, and who</em>. The other three — <strong>Requirements, Boundaries, Reasoning</strong> — lock down the <em class="ital">how, and the why-not</em>. Miss one and your output drifts toward the model's defaults. Use all six and the tool stops being an answer machine and starts being a thinking partner. That second half — Boundaries and Reasoning especially — becomes your main defense against fabrication in Tool 04.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 2: SCORECARD (LIVE) ===================== -->
+<section id="scorecard">
+  <div class="wrap">
+    <p class="rung-label">Tool 02 · Grade it before you send it</p>
+    <h2>The scorecard, live.</h2>
+    <p>Here's the discipline made concrete. Below is a working scorecard: write a prompt, or load one of the examples, and it grades each of the six blocks <span style="color:var(--green);font-weight:600">Present</span>, <span style="color:var(--gold);font-weight:600">Partial</span>, or <span style="color:var(--red);font-weight:600">Missing</span> — with feedback on what would tighten it. It's a heuristic, not a judge. The point is to <em class="ital">see</em> the gaps you'd otherwise send.</p>
+
+    <div class="workbench">
+      <h3>Prompt scorecard</h3>
+      <p class="wb-sub">Load a starting point, edit it, then score. Watch the blocks light up.</p>
+      <div class="wb-presets" id="presets"></div>
+      <textarea id="promptInput" spellcheck="false" placeholder="Type a prompt, or load one above…"></textarea>
+      <div class="wb-actions">
+        <button class="btn" id="scoreBtn">Score it →</button>
+        <button class="btn ghost" id="clearBtn">Clear</button>
+        <span class="wb-hint" id="wbHint"></span>
+      </div>
+      <div class="verdict" id="verdict"></div>
+      <div class="scorecard" id="scorecardRows"></div>
+    </div>
+
+    <h3>Watch a weak prompt get fixed</h3>
+    <p class="note"><span class="k">The brief you're handed</span>Your team needs to create a compelling social-media campaign announcement for the launch of a brand's new collaboration with a music artist, targeting a younger audience across two major social platforms. Write a focused prompt to accomplish it.</p>
+    <p>Here's a reasonable first attempt at that brief:</p>
+
+    <div class="prompt">
+      <div class="bar"><span class="dot"></span><span>first attempt</span><span class="tag">scores 2 / 4 blocks</span></div>
+<pre>As a <span class="cut">product manager</span>, design a compelling social media campaign
+announcement for the launch of a new collaboration between an
+apparel brand and a musician, targeting a younger audience across
+two social platforms.</pre>
+    </div>
+
+    <p>Load that into the scorecard above (it's the <b>"First attempt"</b> preset) and two things flag. <strong>Role → Partial:</strong> "product manager" is a defensible choice, but a social-media or marketing lead is the more natural fit for a campaign announcement — the PM lens doesn't match the tone and expertise the task needs. <strong>Requirements → Missing:</strong> nothing about format, tone, length, or content elements like hashtags, calls to action, or caption style. Without those, the output isn't immediately usable, and it isn't tailored to each platform.</p>
+
+    <p>Fix exactly those two gaps — swap the role, spell out the requirements per platform — and the same prompt now scores clean:</p>
+
+    <div class="prompt">
+      <div class="bar"><span class="dot"></span><span>revised</span><span class="tag">scores 4 / 4 blocks</span></div>
+<pre><span class="b">Role.</span> As a social-media marketing lead, <span class="b">Task.</span> write a compelling
+launch announcement for a new collaboration between an apparel
+brand and a <span class="g">[well-known musician]</span>, <span class="b">Context.</span> targeting a younger
+audience across two major social platforms.
+
+<span class="b">Requirements.</span> Deliver two platform-specific versions:
+  • Platform A — a 100–150 word caption, energetic and trend-aware,
+    2–3 emojis, a clear call to action, and 8–10 relevant hashtags.
+  • Platform B — a caption under 150 characters, plus a 15-second
+    hook idea, a trending-audio suggestion, a CTA, and 4–6 hashtags.
+
+Keep the voice bold and authentic to a younger audience —
+playful and culturally fluent, not corporate. Feature the artist
+prominently and end each post with a launch-date CTA.</pre>
+    </div>
+
+    <p class="note"><span class="k">Note the placeholder</span>The real winning prompt names a specific artist. Here it's <code>[well-known musician]</code> on purpose — a placeholder you fill at the moment of use keeps the example concrete without baking a real name into a public document. Same reasoning we'll apply to the company itself in Tool 04.</p>
+
+    <h3>A subtler miss: context that's present but too narrow</h3>
+    <p>Not every gap is a blank. Sometimes a block is <em class="ital">there</em> but incomplete — and the scorecard flags it Partial rather than Missing. Take a well-built prompt for an executive presentation on a supply-chain sustainability initiative:</p>
+    <div class="prompt">
+      <div class="bar"><span class="dot"></span><span>strong prompt · one Partial block</span><span class="tag">context scores Partial</span></div>
+<pre><span class="b">Role.</span> As a merchandising director, <span class="b">Task.</span> create a presentation
+strategy for executives on our sustainability initiative,
+<span class="b">Context.</span> focused on supply-chain resilience and vendor relationships.
+<span class="b">Requirements.</span> A 15-slide deck with key metrics, competitor
+comparisons, and supplier KPIs — inventory turnover, AP, and PPV
+variances. <span class="b">Reasoning.</span> Flag vendor delivery issues and margin
+compression from geopolitical conflict.</pre>
+    </div>
+    <p>Here's how it scores. <strong>Task → Success:</strong> an executive presentation strategy for the sustainability initiative fits the scenario cleanly. <strong>Requirements → Success:</strong> detailed and specific — the slide count, the metrics, the competitor comparisons, and the named supplier KPIs are strong, well-defined parameters. <strong>Reasoning → Success:</strong> it surfaces the real drivers, vendor delivery issues and margin compression. But <strong>Context → Partial:</strong> the context is real — supply-chain resilience, vendor relationships — yet it misses the <em class="ital">cross-brand dimension</em> that's central to the scenario. This initiative spans all four of the group's brands, and a context scoped to the supply chain alone leaves that out. The block isn't blank; it's just too narrow. That's the difference between Partial and Missing — and it's the kind of gap that's easy to miss precisely because the prompt already looks thorough.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 2b: TIERS ===================== -->
+<section id="tiers">
+  <div class="wrap">
+    <p class="rung-label">Tool 02 · continued — match the tier to the task</p>
+    <h2>Not every task needs every block.</h2>
+    <p>Over-building a simple task wastes effort and can muddy the answer; under-building a complex one invites the failures in Tool 03. Prompts sort into three tiers by how much structure the task actually demands. Switch between them:</p>
+
+    <div class="tiers" role="tablist" aria-label="Prompt tiers">
+      <button data-t="basic" role="tab" aria-selected="true">Basic<span class="sub">Task + Context</span></button>
+      <button data-t="focused" role="tab" aria-selected="false">Focused<span class="sub">+ Role + Requirements</span></button>
+      <button data-t="comprehensive" role="tab" aria-selected="false">Comprehensive<span class="sub">+ Reasoning + Boundaries</span></button>
+    </div>
+
+    <div class="tier-panel active" data-panel="basic">
+      <div class="blockchips">
+        <span class="chip on">Task</span><span class="chip on">Context</span>
+        <span class="chip">Role</span><span class="chip">Requirements</span><span class="chip">Reasoning</span><span class="chip">Boundaries</span>
+      </div>
+      <p><strong>When it fits:</strong> single-purpose, clear, no special lens needed. A translation is self-contained — it needs the task and enough context to get register and audience right, nothing more.</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>basic</span><span class="tag">task + context</span></div>
+<pre>Translate the following product description into Spanish for a
+Latin American launch of an athletic-wear line. Keep the tone
+energetic and consumer-facing.</pre>
+      </div>
+    </div>
+
+    <div class="tier-panel" data-panel="focused">
+      <div class="blockchips">
+        <span class="chip on">Task</span><span class="chip on">Context</span><span class="chip on">Role</span><span class="chip on">Requirements</span>
+        <span class="chip">Reasoning</span><span class="chip">Boundaries</span>
+      </div>
+      <p><strong>When it fits:</strong> the work needs a professional lens and has to meet a particular standard or format. A competitive analysis, say — where the merchandising-vs-marketing-vs-finance perspective genuinely changes the output, and the deliverable has a required shape.</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>focused</span><span class="tag">role + task + context + requirements</span></div>
+<pre><span class="b">Role.</span> As a brand strategist, <span class="b">Task.</span> create a competitive analysis
+comparing our value brand's positioning against fast-fashion
+competitors. <span class="b">Context.</span> The brand competes on price and family-
+focused appeal; the audience is budget-conscious households.
+
+<span class="b">Requirements.</span> Follow our standard analysis structure. Include
+metrics on price positioning, trend responsiveness, and family-
+focused marketing. Present as a comparison table plus a one-page
+summary of where we lead and where we lag.</pre>
+      </div>
+      <p style="margin-top:18px">Here's the shape on a bigger task — a cross-brand roadmap deck. Watch how Role and Requirements turn a vague request into something the model can execute without guessing:</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>focused · roadmap deck</span><span class="tag">role + task + context + requirements</span></div>
+<pre><span class="b">Role.</span> As a product manager at a large multi-brand apparel group,
+<span class="b">Task.</span> develop a quarterly product-roadmap presentation for the
+group's music-and-entertainment retail platform, <span class="b">Context.</span> to be
+shared with cross-functional leaders across all four of the
+group's brands.
+
+<span class="b">Requirements.</span> Include key milestones for music and entertainment
+partnerships, highlight brand-specific initiatives for each of the
+four brands, incorporate customer-engagement metrics, and format
+as a 15-slide deck suitable for executive review.</pre>
+      </div>
+    </div>
+
+    <div class="tier-panel" data-panel="comprehensive">
+      <div class="blockchips">
+        <span class="chip on">Task</span><span class="chip on">Context</span><span class="chip on">Role</span>
+        <span class="chip on">Requirements</span><span class="chip on">Reasoning</span><span class="chip on">Boundaries</span>
+      </div>
+      <p><strong>When it fits:</strong> high-stakes judgment with real tradeoffs, and output that others will see. Add Reasoning so the logic is inspectable, and Boundaries to keep the model inside the facts and the values that matter. This is the tier for a sensitive brand decision.</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>comprehensive</span><span class="tag">all six blocks</span></div>
+<pre><span class="b">Role.</span> As a brand strategy lead, <span class="b">Task.</span> develop a recommendation
+on whether one of our brands should partner with a high-profile
+but polarizing public figure for an upcoming campaign.
+
+<span class="b">Context.</span> The brand's identity centers on inclusion and community;
+the audience skews values-conscious. Weigh financial upside,
+reputational risk, competitor positioning, and likely customer
+sentiment.
+
+<span class="b">Reasoning.</span> Explain the logic behind each factor so the tradeoffs
+are visible to leadership.
+<span class="b">Boundaries.</span> Flag anything you're uncertain about rather than
+asserting it. Don't fabricate figures or sentiment data.</pre>
+      </div>
+      <p style="margin-top:18px">A second, richer example — a cross-brand holiday strategy. Every block is visible in one prompt: the Boundaries keep the strategy from cannibalizing the group's own brands, and the Reasoning forces the model to justify, not just conclude:</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>comprehensive · cross-brand strategy</span><span class="tag">all six blocks</span></div>
+<pre><span class="b">Role.</span> As a marketing director at a large multi-brand apparel
+group, <span class="b">Task.</span> develop a cross-brand campaign strategy <span class="b">Context.</span> for
+the upcoming holiday season that leverages our music-and-
+entertainment retail platform to engage younger customers across
+all four of the group's brands, <span class="b">Requirements.</span> including specific
+music partnerships, influencer collaborations, and in-store
+experiential elements that align with each brand's distinct
+identity.
+
+<span class="b">Boundaries.</span> Avoid diluting individual brand positioning or
+creating campaigns that cannibalize sales between our brands.
+<span class="b">Reasoning.</span> Explain how this strategy will drive both cultural
+relevance and measurable revenue impact across all four brands
+while strengthening the group's overall market position.</pre>
+      </div>
+      <p class="note"><span class="k">Boundaries keep it on brand</span>Just as one brand in the group isn't another, your AI needs guardrails — tell it what to <em class="ital">avoid</em>, not just what to do. For cross-functional work that means naming what's off-limits: the wrong tone, the wrong audience, the wrong assumptions. The boundary above ("don't cannibalize sales between our brands") is doing exactly that — fencing off an outcome that would technically satisfy the task while quietly damaging the business.</p>
+      <p style="margin-top:18px">A sharp boundary can protect something even more specific — an actual budget line. Watch this third example fence off a particular tradeoff the model might otherwise recommend on its own:</p>
+      <div class="prompt">
+        <div class="bar"><span class="dot"></span><span>comprehensive · phased roadmap</span><span class="tag">all six blocks</span></div>
+<pre><span class="b">Role.</span> As a product manager leading the music-and-entertainment
+platform initiative at a large multi-brand apparel group, <span class="b">Task.</span>
+create a phased implementation roadmap for integrating music and
+entertainment partnerships <span class="b">Context.</span> across all four of the group's
+brands while maintaining each brand's distinct identity.
+<span class="b">Requirements.</span> Include specific KPIs for customer engagement,
+cross-functional team milestones, and brand-differentiation
+strategies for each of the four brands.
+
+<span class="b">Boundaries.</span> Avoid diluting individual brand positioning or
+recommending budget reallocations that would reduce existing
+marketing spend for core retail operations.
+<span class="b">Reasoning.</span> Explain how each phase will build cultural relevance
+while supporting both immediate quarterly sales goals and long-
+term brand-transformation objectives.</pre>
+      </div>
+      <p style="font-size:16px;color:var(--muted);margin-top:6px">The boundary here is the instructive part: "don't recommend budget reallocations that reduce marketing spend for core retail operations" fences off a specific move the model might reach for on its own. A vague "stay on strategy" wouldn't have caught it.</p>
+    </div>
+
+    <p style="margin-top:26px">The tier is not a measure of effort or importance — a translation done well is still valuable work. It measures how much the outcome depends on structure <em class="ital">you</em> have to supply. When a decision or an audience sits downstream, you're almost always in comprehensive territory, precisely because that's where a wrong answer costs the most.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 3: PERSONAS ===================== -->
+<section id="personas">
+  <div class="wrap">
+    <p class="rung-label">Tool 03 · Call the right mode</p>
+    <h2>One model, three working modes.</h2>
+    <p>The same model takes three quite different postures. Naming them makes it easier to reach for the right one, because each is strong at a different kind of task and weak at the others. Think of them less as tools and more as teammates — each shows up differently depending on what you need. The rule of thumb: <strong>match the muscle to the mission.</strong> Manual-muscle tasks go to the Assistant, mental-muscle tasks go to the Strategist, and the Creator sits right in between.</p>
+
+    <div class="persona-tabs" role="tablist" aria-label="AI personas">
+      <button data-p="assistant" role="tab" aria-selected="true">The Assistant<span class="role">handles the manual grind</span></button>
+      <button data-p="creator" role="tab" aria-selected="false">The Creator<span class="role">gives a fast first draft</span></button>
+      <button data-p="strategist" role="tab" aria-selected="false">The Strategist<span class="role">thinks alongside you</span></button>
+    </div>
+    <div class="persona-body">
+
+      <div class="persona-panel active" data-ppanel="assistant">
+        <p class="pverb">Verb: structure · sort · reshape</p>
+        <p>The Assistant is for repetitive, patterned work — the sorting and formatting that eats time but follows consistent rules. It frees you to do the thinking, rather than doing the thinking itself.</p>
+        <h4 style="font-family:var(--disp);margin:20px 0 8px">Example, at rising complexity</h4>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>assistant · simple</span></div>
+<pre>Reshape the customer-feedback export below into a clean table with
+one row per comment and columns for brand, product line, and a
+one-word sentiment (positive / neutral / negative). Output as CSV.</pre>
+        </div>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>assistant · with a boundary</span></div>
+<pre>Transform the raw store feedback below into organized summaries,
+grouped by brand and then by product line. For each group give the
+top three recurring themes and a count of comments per theme.
+
+Use only the comments provided. If a field is blank, mark it
+"unknown" — do not guess the brand or product.</pre>
+        </div>
+        <div class="pwhen">
+          <div class="col use"><h4>Reach for it when</h4>The task is mechanical and rule-based: reformatting, categorizing, extracting, de-duplicating, converting between formats.</div>
+          <div class="col avoid"><h4>Don't, when</h4>The task needs judgment about what the data <em class="ital">means</em>, or a decision about what to do next. That's the Strategist.</div>
+        </div>
+        <p style="margin-top:14px;font-size:16px;color:var(--muted)">Payoff: it frees valuable time for the analysis, instead of spending it on the data-wrangling.</p>
+      </div>
+
+      <div class="persona-panel" data-ppanel="creator">
+        <p class="pverb">Verb: draft · produce · generate</p>
+        <p>The Creator gets you off the blank page. Its output is a <em class="ital">starting point you edit</em>, not a finished deliverable — you're the editor, it's the first-draft engine. Use it when you need to produce content quickly across several formats or contexts.</p>
+        <h4 style="font-family:var(--disp);margin:20px 0 8px">Example, at rising complexity</h4>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>creator · simple</span></div>
+<pre>Draft three subject-line options and a short opening paragraph for
+an email announcing a spring collection across our four brands.
+Keep each brand's line distinct in tone.</pre>
+        </div>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>creator · structured</span></div>
+<pre>Develop an initial version of a cross-functional product-launch
+presentation that weaves together merchandising data, a marketing
+narrative, and financial projections into one cohesive storyline.
+
+Structure it as: the opportunity, the plan, the numbers, the risks,
+the ask. Mark any place I need to insert real figures with [DATA].</pre>
+        </div>
+        <div class="pwhen">
+          <div class="col use"><h4>Reach for it when</h4>You need a solid foundation to refine — a first draft of a doc, deck, email, or outline that would otherwise start from nothing.</div>
+          <div class="col avoid"><h4>Don't, when</h4>You need it to invent facts or figures to fill the draft. Ask for <code>[DATA]</code> placeholders and supply the numbers yourself (see Tool 04).</div>
+        </div>
+        <p style="margin-top:14px;font-size:16px;color:var(--muted)">Payoff: it accelerates creation by giving you something to react to, rather than a blank slate.</p>
+      </div>
+
+      <div class="persona-panel" data-ppanel="strategist">
+        <p class="pverb">Verb: challenge · stress-test · interrogate</p>
+        <p>The Strategist doesn't make things. You bring it an idea and it interrogates that idea — pokes holes, names what you missed, and can even role-play a skeptical stakeholder so you rehearse the hard questions before a real one asks them. It's a thinking partner for complex problems where an outside perspective helps.</p>
+        <h4 style="font-family:var(--disp);margin:20px 0 8px">Example, at rising complexity</h4>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>strategist · simple</span></div>
+<pre>Here's my plan for a cross-brand loyalty program [paste]. What are
+the three weakest assumptions in it, and what would have to be true
+for each to hold?</pre>
+        </div>
+        <div class="prompt">
+          <div class="bar"><span class="dot"></span><span>strategist · role-play</span></div>
+<pre>Evaluate these two campaign concepts [paste]. Identify blind spots,
+challenge my assumptions about who they'll resonate with, and
+suggest a sharper angle.
+
+Then role-play three stakeholders in turn — a skeptical finance
+lead, a brand-safety reviewer, and a target customer — and give me
+the toughest objection each would raise.</pre>
+        </div>
+        <div class="pwhen">
+          <div class="col use"><h4>Reach for it when</h4>You're about to commit — to a decision, a design, a pitch — and want the weaknesses surfaced before leadership or a live audience surfaces them.</div>
+          <div class="col avoid"><h4>Don't, when</h4>You'll take its confident claims as fact. This is the highest-risk mode for fabrication — verify anything it asserts (Tool 04).</div>
+        </div>
+        <p style="margin-top:14px;font-size:16px;color:var(--muted)">Payoff: diverse viewpoints and constructive critique that sharpen your thinking before you present it.</p>
+      </div>
+
+    </div>
+
+    <p class="pullquote">The Assistant structures what exists. The Creator generates something to start from. The Strategist questions what you bring it.</p>
+    <p>One thing to carry into the next tool: the Strategist is the highest-leverage mode <em class="ital">and</em> the most dangerous. It trades in claims and judgment rather than verifiable structure — exactly the territory where a model states something confident and untrue. The more a task leans on the Strategist, the more its output needs checking.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 4a: HALLUCINATIONS ===================== -->
+<section id="hallucinations">
+  <div class="wrap">
+    <p class="rung-label">Tool 04 · Catch what it invents</p>
+    <h2>The two ways AI quietly gets it wrong.</h2>
+    <p>Two failure modes matter most in practice. They have different causes and different fixes, and confusing them means reaching for the wrong defense. The first is <strong>fabrication</strong> — confident invention. The second is <strong>bias</strong> — faithful reproduction of a skew.</p>
+
+    <h3>Fabrication comes in two forms</h3>
+    <p>A model trained to be helpful behaves as if it must always produce an answer. When it lacks the information — because the fact is internal, recent, or simply unknown to it — it doesn't stop and say so by default. It generates something plausible instead.</p>
+    <ul class="clean">
+      <li><b>Fabricated facts.</b> You ask for specific figures the model was never trained on — product-level sales for one region last quarter — and it returns realistic names and numbers that don't match reality.</li>
+      <li><b>Fabricated sources.</b> You ask for a quote from a named executive, and rather than admit it can't find one, the model composes a polished, quotable line and attributes it to a person who never said it.</li>
+    </ul>
+
+    <h3>Two moments to go on high alert</h3>
+    <p>The danger is sharpest in two situations — name them as triggers. Be on high alert whenever you are <strong>(1) using AI output to make a decision</strong>, or <strong>(2) sharing AI output with other people.</strong></p>
+    <div class="compare">
+      <div class="card bad"><h4>Deciding on it</h4>You ask AI to generate market-share stats to justify a budget request. In the meeting the numbers turn out to be fabricated — your credibility takes the hit and the proposal is shelved.</div>
+      <div class="card bad"><h4>Sharing it</h4>You use AI to draft talking points with specific carbon-reduction figures for a leader to deliver publicly. When they're fact-checked and found invented, it becomes a public correction, not a private edit.</div>
+    </div>
+    <p class="pullquote">Fluent and confident is not evidence of true. A model's tone is identical whether it's reciting a fact or inventing one.</p>
+
+    <h3>Prevention: three blocks earn their keep</h3>
+    <p>The fix maps exactly onto three of the six building blocks from Tool 01.</p>
+    <table class="blocks">
+      <tbody>
+        <tr><td class="bk">Context</td><td>Supply the real information — paste the data, attach the doc, give the source — then tell it to use <em class="ital">only</em> that. A forecast built on numbers you provided can't fabricate those numbers; it can only do arithmetic on them.</td></tr>
+        <tr><td class="bk">Boundaries</td><td>Forbid invention explicitly, and give the model permission to say "I don't know." That single instruction removes the pressure that produces confabulation.</td></tr>
+        <tr><td class="bk">Reasoning</td><td>Ask for step-by-step logic and citations you can trace. When the model shows its work, the gaps become visible instead of hiding inside a confident paragraph.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Context does the heaviest lifting.</strong> The surest way to stop the model inventing a number is to hand it every number it needs and tell it to build on those. Don't ask it to <em class="ital">produce</em> a forecast from thin air; give it the inputs and let it do the arithmetic:</p>
+    <div class="prompt">
+      <div class="bar"><span class="dot"></span><span>context · a trusted foundation</span><span class="tag">supply the numbers, don't invent them</span></div>
+<pre>Generate a 6-month sales forecast for one brand's denim collection,
+assuming we maintain our current market share of 18% in the premium
+denim category, an average selling price of $89 per unit, and a
+historical quarterly growth rate of 12%. Base the forecast on the
+prior-year Q4 sales data showing 2.3 million units sold.</pre>
+    </div>
+    <p style="font-size:16px;color:var(--muted);margin-top:6px">Every figure the model would otherwise guess — share, price, growth rate, the base period — is supplied. There's nothing left to fabricate; the task collapses to arithmetic on your inputs.</p>
+    <p>Add Boundaries and Reasoning on top, and on a task like reading customer feedback the fully-defended prompt looks like this:</p>
+    <div class="prompt">
+      <div class="bar"><span class="dot"></span><span>context + boundaries + reasoning</span></div>
+<pre>Analyze the customer-feedback data below and identify the top three
+themes. For each, include one direct quote from the data.
+
+<span class="b">Boundary.</span> Do not create or paraphrase quotes — use exact text from
+the provided feedback. If a theme has no clear supporting quote,
+say so rather than inventing one.
+
+<span class="b">Reasoning.</span> Explain why each theme was chosen, based on how often
+it appears and the sentiment around it.</pre>
+    </div>
+
+    <h3>And verify before you ship it</h3>
+    <p>Prevention lowers the odds of a bad answer; it doesn't eliminate them. The last step happens after the model responds, before the output leaves your hands: <strong>cross-check anything consequential.</strong> Run the same question through a different AI tool and compare, or confirm the facts, quotes, and figures yourself against a real source. Subtle errors — an outdated number, a plausible-but-wrong detail — slip through precisely when everything else looks clean. The final call is always yours, and it belongs to you exactly in the two high-alert moments above: when you're deciding on the output, or handing it to someone else.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 4b: BIAS ===================== -->
+<section id="bias">
+  <div class="wrap">
+    <p class="rung-label">Tool 04 · continued — catch what it reproduces</p>
+    <h2>Bias: a faithful copy of a skew.</h2>
+    <p>Bias is a different animal. Fabrication invents something false; bias faithfully reproduces something <em class="ital">real</em> — a prejudice, a skew, or an oversimplification already present in the data the model learned from. Nobody asks for it, and each individual output can look fine. The problem lives in the pattern. It comes in two shapes, and only one of them is yours to fix at the prompt.</p>
+
+    <div class="compare">
+      <div class="card bad">
+        <h4>Skewed representation</h4>
+        <p>Ask an image generator for "professional attire" and it may consistently place some groups in business settings and others in casual or athletic wear — mirroring a lopsided pattern in its training images. This one is baked into the model. You catch it by reviewing outputs for skew, not just for accuracy. The cost isn't a wrong picture — it's the message the pattern sends: it can contradict a brand's stated values, alienate whole customer segments, and erode trust that took years to build.</p>
+      </div>
+      <div class="card good">
+        <h4>Context omission</h4>
+        <p>Ask for "family holiday" marketing copy without saying which holidays, and the model defaults to the statistically dominant interpretation — say, Christmas and Western traditions alone, quietly passing over Diwali, Hanukkah, Lunar New Year, and the customers who celebrate them. This one you fix at the prompt: name the scope and the audience explicitly.</p>
+      </div>
+    </div>
+
+    <p>The same Context principle that fights fabrication also fights bias-by-omission. A prompt that spells out the full range of holidays, or gives examples of how your customers actually talk, closes the gap the model would otherwise fill with its most common assumption.</p>
+    <p class="note"><span class="k">A live example: slang</span>In sentiment analysis, contemporary slang often reads as negative to a model taking words literally — so a glowing review gets scored as a complaint. It's a context failure, not a math failure. Tell the model how your customers use language, give it a few examples, and the misread goes away.</p>
+
+    <h3>Where the risk concentrates</h3>
+    <p>Both failures climb steeply as a task moves from handling data toward driving a decision. That's where to spend your verification budget.</p>
+    <table class="matrix">
+      <thead><tr><th>Situation</th><th>Dominant risk</th><th>The move</th><th>Exposure</th></tr></thead>
+      <tbody>
+        <tr><td>Sorting or formatting data you supply</td><td class="lvl low">Low</td><td>Assistant mode; light review</td><td class="exp">~15%</td></tr>
+        <tr><td>Drafting content for internal use</td><td class="lvl mod">Moderate</td><td>Creator mode; verify any figure or quote</td><td class="exp">~30%</td></tr>
+        <tr><td>Deciding, or presenting to others</td><td class="lvl high">High</td><td>Comprehensive prompt; source facts independently; verify before shipping</td><td class="exp">~55%</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:15.5px;color:var(--muted)">Directional, not precise — the point is the slope, not the decimals.</p>
+  </div>
+</section>
+
+<!-- ===================== TOOL 5: PRIVACY / ANONYMIZATION ===================== -->
+<section id="privacy">
+  <div class="wrap">
+    <p class="rung-label">Tool 05 · Give it the shape, not the secrets</p>
+    <h2>Why every prompt here is anonymized.</h2>
+    <p>Now the loop closes. Every prompt in this piece dropped the company name for a generic descriptor and replaced exact figures with ranges. That was the last tool, working quietly the whole time.</p>
+    <p>The reason is simple: some AI tools use what you type to improve their models. On any tool that isn't your organization's own sanctioned platform, sensitive detail shouldn't go in. A range preserves enough signal for the model to be useful; a precise internal figure preserves nothing except your exposure.</p>
+
+    <div class="compare">
+      <div class="card bad">
+        <h4>Leaks — don't paste this</h4>
+        <p class="mono" style="font-family:var(--mono);font-size:14px;line-height:1.6">"…our <b>[Company]</b> brand grew <b>23.7%</b> this quarter across <b>[Brand A, B, C, D]</b>, and we want to replicate it using our unreleased <b>[Platform]</b>…"</p>
+      </div>
+      <div class="card good">
+        <h4>Anonymized — safe, still useful</h4>
+        <p class="mono" style="font-family:var(--mono);font-size:14px;line-height:1.6">"…one brand at a large multi-brand apparel group grew <b>over 20%</b> this quarter, and we want to replicate it across our other brands using a new content platform…"</p>
+      </div>
+    </div>
+
+    <ul class="clean">
+      <li><b>Swap identity for a descriptor.</b> "A global multi-brand apparel retailer," not the company's name.</li>
+      <li><b>Swap precise numbers for ranges.</b> "Over 20% growth," not the exact figure. The model still understands "strong, worth replicating."</li>
+      <li><b>On a sanctioned enterprise platform</b> with proper data protections, follow your org's policy — you may be able to keep the real detail. The rule is about non-sanctioned tools.</li>
+    </ul>
+    <p class="pullquote">Give the model the shape of your problem, not the secrets inside it. It rarely needs the secrets to help.</p>
+  </div>
+</section>
+
+<!-- ===================== CLOSE ===================== -->
+<footer>
+  <div class="wrap">
+    <p class="divider-num">— CARRY THIS FORWARD —</p>
+    <p class="kicker" style="margin-top:14px">A model fills whatever you leave blank.</p>
+    <p style="max-width:64ch">And it fills it in the same confident voice it uses when it's right. Good prompting is the practice of leaving fewer blanks — the role, the context, the requirements, the limits — so the model has less to invent. Good judgment is knowing which mode the task wants, and where the answer needs checking before it moves.</p>
+    <p style="max-width:64ch;margin-top:18px">The open question is where your own line sits. Which of your recurring tasks are safe to hand over with a light review — and which carry enough consequence that the output has to be sourced and checked before anyone else sees it? Draw that line deliberately, task by task. The model won't draw it for you, and it will sound equally sure on both sides of it.</p>
+    <p class="tags">Tags · Artificial Intelligence · Prompt Engineering · AI Literacy · Productivity · Machine Learning</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- preset prompts for the live scorecard ----------
+  var PRESETS = {
+    "First attempt (weak)":
+"As a product manager, design a compelling social media campaign announcement for the launch of a new collaboration between an apparel brand and a musician, targeting a younger audience across two social platforms.",
+    "Revised (strong)":
+"As a social-media marketing lead, write a compelling launch announcement for a new collaboration between an apparel brand and a well-known musician, targeting a younger audience across two major social platforms. Deliver two platform-specific versions: Platform A a 100-150 word caption, energetic and trend-aware, 2-3 emojis, a clear call to action and 8-10 hashtags; Platform B a caption under 150 characters plus a 15-second hook idea, a trending-audio suggestion, a CTA and 4-6 hashtags. Keep the voice bold and authentic, not corporate, and end each post with a launch-date call to action.",
+    "Basic — translation":
+"Translate the following product description into Spanish for a Latin American launch of an athletic-wear line. Keep the tone energetic and consumer-facing.",
+    "Comprehensive — sensitive decision":
+"As a brand strategy lead, develop a recommendation on whether one of our brands should partner with a high-profile but polarizing public figure for an upcoming campaign. Context: the brand's identity centers on inclusion and community and the audience skews values-conscious; weigh financial upside, reputational risk, competitor positioning and likely customer sentiment. Reasoning: explain the logic behind each factor so the tradeoffs are visible. Boundaries: flag anything you are uncertain about rather than asserting it, and do not fabricate figures or sentiment data.",
+    "Bare task":
+"Write something for our new campaign."
+  };
+
+  var BLOCKS = [
+    {key:"Role",        role:true},
+    {key:"Task",        role:true},
+    {key:"Context",     role:true},
+    {key:"Requirements",role:true},
+    {key:"Reasoning",   role:false},
+    {key:"Boundaries",  role:false}
+  ];
+
+  // ---------- heuristics: score a prompt, return {status, fb} per block ----------
+  function analyze(text){
+    var t = (text||"").trim();
+    var low = t.toLowerCase();
+    var words = t ? t.split(/\s+/).length : 0;
+    var res = {};
+
+    // ROLE
+    (function(){
+      var hasRole = /\b(as an?|acting as|you are an?|in the role of|as the)\b/.test(low);
+      var pmMismatch = /\bproduct manager\b/.test(low) && /(announcement|caption|social|campaign|marketing copy|post)\b/.test(low);
+      if(!hasRole){ res.Role={s:"miss",fb:"No role set — the model will pick a generic voice. Name the lens: \u201cAs a \u2026\u201d."}; }
+      else if(pmMismatch){ res.Role={s:"part",fb:"A role is set, but \u201cproduct manager\u201d is an awkward fit for a marketing/announcement task. A social-media or marketing lead matches the tone and expertise better."}; }
+      else { res.Role={s:"ok",fb:"A clear professional lens is set, which shapes vocabulary and priorities."}; }
+    })();
+
+    // TASK
+    (function(){
+      var verbs = /\b(write|create|draft|design|develop|summari[sz]e|analy[sz]e|translate|build|outline|compare|generate|produce|evaluate|recommend|reshape|transform|identify)\b/.test(low);
+      if(words===0){ res.Task={s:"miss",fb:"Empty prompt — nothing to do."}; }
+      else if(!verbs){ res.Task={s:"part",fb:"No clear action verb. State the deliverable directly: \u201cwrite\u2026\u201d, \u201canalyze\u2026\u201d, \u201cdraft\u2026\u201d."}; }
+      else { res.Task={s:"ok",fb:"Clear, actionable task with a defined deliverable."}; }
+    })();
+
+    // CONTEXT
+    (function(){
+      var signals = /\b(audience|platform|for (a|the|our)|targeting|context:|market|younger|gen[- ]?z|brand|customers?|launch|our|budget-conscious|households)\b/.test(low);
+      var richer = /\b(targeting|audience|platform|context:|market)\b/.test(low) && words>25;
+      if(!signals){ res.Context={s:"miss",fb:"No situation given — who is this for, on what, and why? The model will guess."}; }
+      else if(!richer){ res.Context={s:"part",fb:"Some context, but thin. Add audience, platform, and the background that frames the task."}; }
+      else { res.Context={s:"ok",fb:"Solid context — audience, setting, and the nature of the work are clear."}; }
+    })();
+
+    // REQUIREMENTS
+    (function(){
+      var fmt = /\b(word|words|characters?|hashtags?|cta|call to action|emojis?|bullet|table|slides?|format|tone|length|sections?|caption|csv|columns?|structure|versions?)\b/.test(low);
+      var count = (low.match(/\b(word|words|characters?|hashtags?|cta|call to action|emojis?|bullet|table|slides?|format|tone|length|caption|csv|columns?|structure|versions?)\b/g)||[]).length;
+      if(!fmt){ res.Requirements={s:"miss",fb:"No format, tone, length, or content elements (hashtags, CTAs, structure). Output won\u2019t be immediately usable."}; }
+      else if(count<2){ res.Requirements={s:"part",fb:"A requirement or two, but under-specified. Pin down format AND length AND the required elements."}; }
+      else { res.Requirements={s:"ok",fb:"Detailed, specific requirements — format, elements, and structure are defined."}; }
+    })();
+
+    // REASONING
+    (function(){
+      var r = /\b(explain (your|the|why)|reasoning|show your work|justify|walk me through|rationale|why (you|each)|step[- ]by[- ]step)\b/.test(low);
+      res.Reasoning = r ? {s:"ok",fb:"You\u2019ve asked the model to expose its logic — the selection becomes auditable."}
+                        : {s:"opt",fb:"Optional for this tier. For a decision, add \u201cexplain your reasoning\u201d to make the logic inspectable."};
+    })();
+
+    // BOUNDARIES
+    (function(){
+      var b = /\b(do not|don\u2019t|don't|only use|use only|avoid|must not|no (fabricat|invent)|without|flag anything|say (so|you don\u2019t|you don't)|exact text|no hardcoded|limit(ed)? to)\b/.test(low);
+      res.Boundaries = b ? {s:"ok",fb:"Clear limits set — you\u2019ve told the model what not to do, which curbs invention."}
+                         : {s:"opt",fb:"Optional for this tier. To curb fabrication, add \u201cuse only the data provided; don\u2019t invent quotes or figures.\u201d"};
+    })();
+
+    return res;
+  }
+
+  function tierName(res, text){
+    if(!text.trim()) return null;
+    var has = function(k){ return res[k] && res[k].s==="ok"; };
+    var reasoning = has("Reasoning"), bound = has("Boundaries");
+    var role = res.Role && res.Role.s!=="miss", req = res.Requirements && res.Requirements.s!=="miss";
+    if(reasoning && bound) return "Comprehensive";
+    if(role && req) return "Focused";
+    return "Basic";
+  }
+
+  // ---------- render ----------
+  var input = document.getElementById("promptInput");
+  var card  = document.getElementById("scorecardRows");
+  var verdict = document.getElementById("verdict");
+  var hint = document.getElementById("wbHint");
+  var presetWrap = document.getElementById("presets");
+
+  Object.keys(PRESETS).forEach(function(name){
+    var b = document.createElement("button");
+    b.textContent = name;
+    b.addEventListener("click", function(){ input.value = PRESETS[name]; render(); input.focus(); });
+    presetWrap.appendChild(b);
+  });
+
+  var STATUS_LABEL = {ok:"Present", part:"Partial", miss:"Missing", opt:"Optional"};
+  var STATUS_CLASS = {ok:"ok", part:"part", miss:"miss", opt:"part"};
+
+  function render(){
+    var text = input.value;
+    var res = analyze(text);
+    card.innerHTML = "";
+    var okCount = 0, coreCount = 0;
+
+    BLOCKS.forEach(function(b, i){
+      var r = res[b.key] || {s:"miss",fb:""};
+      if(b.role){ coreCount++; if(r.s==="ok") okCount++; }
+      var row = document.createElement("div");
+      row.className = "row";
+      var sc = STATUS_CLASS[r.s] || "miss";
+      var sl = STATUS_LABEL[r.s] || "Missing";
+      row.innerHTML =
+        '<div class="name">'+b.key+'</div>'+
+        '<div><span class="status '+sc+'">'+sl+'</span></div>'+
+        '<div class="fb">'+r.fb+'</div>';
+      card.appendChild(row);
+      setTimeout(function(){ row.classList.add("show"); }, 60*i);
+    });
+
+    var tn = tierName(res, text);
+    if(tn){
+      verdict.style.display="block";
+      verdict.innerHTML = 'Reads as a <span class="tier">'+tn+'</span> prompt · core blocks present: '+okCount+' / 4';
+    } else {
+      verdict.style.display="none";
+    }
+    hint.textContent = text.trim() ? "" : "Tip: load a preset to see the difference between a weak and a strong prompt.";
+  }
+
+  document.getElementById("scoreBtn").addEventListener("click", render);
+  document.getElementById("clearBtn").addEventListener("click", function(){ input.value=""; render(); input.focus(); });
+  input.addEventListener("input", function(){
+    // live-update only after first score to avoid noise; keep it responsive but cheap
+    if(verdict.style.display==="block" || card.children.length){ render(); }
+  });
+
+  // preload the weak example so the tool is populated on arrival
+  input.value = PRESETS["First attempt (weak)"];
+  render();
+
+  // ---------- tier tabs ----------
+  var tierBtns = document.querySelectorAll('.tiers button');
+  tierBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tierBtns.forEach(function(b){ b.setAttribute('aria-selected','false'); });
+      btn.setAttribute('aria-selected','true');
+      var t = btn.getAttribute('data-t');
+      document.querySelectorAll('.tier-panel').forEach(function(pn){
+        pn.classList.toggle('active', pn.getAttribute('data-panel')===t);
+      });
+    });
+  });
+
+  // ---------- persona tabs ----------
+  var pBtns = document.querySelectorAll('.persona-tabs button');
+  pBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      pBtns.forEach(function(b){ b.setAttribute('aria-selected','false'); });
+      btn.setAttribute('aria-selected','true');
+      var pp = btn.getAttribute('data-p');
+      document.querySelectorAll('.persona-panel').forEach(function(pn){
+        pn.classList.toggle('active', pn.getAttribute('data-ppanel')===pp);
+      });
+    });
+  });
+
+  // keyboard support for tablists
+  function arrowNav(list){
+    list.forEach(function(btn, idx){
+      btn.addEventListener('keydown', function(e){
+        if(e.key!=="ArrowRight" && e.key!=="ArrowLeft") return;
+        e.preventDefault();
+        var n = e.key==="ArrowRight" ? (idx+1)%list.length : (idx-1+list.length)%list.length;
+        list[n].click(); list[n].focus();
+      });
+    });
+  }
+  arrowNav(Array.prototype.slice.call(tierBtns));
+  arrowNav(Array.prototype.slice.call(pBtns));
+})();
+</script>
+</body>
+</html>
